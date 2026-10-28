@@ -1,20 +1,27 @@
-// drawing data type
 export type Point = {
   x: number;
   y: number;
 };
 
 export type Stroke = {
+  type: "stroke";
   points: Point[];
   color: string;
   width: number;
 };
 
-// draw one stroke
-export function drawStroke(
-  ctx: CanvasRenderingContext2D,
-  stroke: Stroke,
-) {
+export type Sticker = {
+  type: "sticker";
+  x: number;
+  y: number;
+  emoji: string;
+  size: number;
+};
+
+export type DrawingCommand = Stroke | Sticker;
+
+// draw stroke
+function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
   if (stroke.points.length === 0) return;
 
   ctx.beginPath();
@@ -28,4 +35,28 @@ export function drawStroke(
   }
 
   ctx.stroke();
+}
+
+// draw sticker
+function drawSticker(ctx: CanvasRenderingContext2D, sticker: Sticker) {
+  ctx.font = `${sticker.size}px sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(sticker.emoji, sticker.x, sticker.y);
+}
+
+// draw anything
+export function drawCommand(
+  ctx: CanvasRenderingContext2D,
+  command: DrawingCommand,
+) {
+  ctx.save();
+
+  if (command.type === "stroke") {
+    drawStroke(ctx, command);
+  } else {
+    drawSticker(ctx, command);
+  }
+
+  ctx.restore();
 }

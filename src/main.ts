@@ -1,4 +1,11 @@
-import { drawStroke, type Point, type Stroke } from "./drawing.ts";
+import {
+  drawCommand,
+  type DrawingCommand,
+  type Point,
+  type Stroke,
+} from "./drawing.ts";
+
+import { tools } from "./tools.ts";
 
 // Get HTML elements
 const canvas = document.querySelector<HTMLCanvasElement>("#canvas")!;
@@ -8,8 +15,8 @@ const redoButton = document.querySelector<HTMLButtonElement>("#redo")!;
 const pen = canvas.getContext("2d")!;
 
 // Drawing data
-const strokes: Stroke[] = [];
-const undoneStrokes: Stroke[] = [];
+const commands: DrawingCommand[] = [];
+const undoneCommands: DrawingCommand[] = [];
 
 let currentStroke: Stroke | null = null;
 let activePointerId: number | null = null;
@@ -24,40 +31,50 @@ function pointerToCanvas(event: PointerEvent): Point {
   };
 }
 
+// choose tool
+let selectedTool = tools.thin;
+document.querySelectorAll<HTMLButtonElement>(".tool").forEach((button) => {
+  button.addEventListener("click", () => {
+    const toolId = button.dataset.tool!;
+
+    selectedTool = tools[toolId];
+  });
+});
+
 // unable button
 function updateButtons() {
-  undoButton.disabled = strokes.length === 0;
-  redoButton.disabled = undoneStrokes.length === 0;
+  undoButton.disabled = commands.length === 0;
+  redoButton.disabled = undoneCommands.length === 0;
 }
 
 function render() {
   pen.clearRect(0, 0, canvas.width, canvas.height);
 
-  for (const stroke of strokes) {
-    drawStroke(pen, stroke);
+  for (const command of commands) {
+    drawCommand(pen, command);
   }
 
   if (currentStroke !== null) {
-    drawStroke(pen, currentStroke);
+    drawCommand(pen, currentStroke);
   }
 
   updateButtons();
 }
 
 function undo() {
-  const stroke = strokes.pop();
+  const command = commands.pop();
 
-  if (stroke) {
-    undoneStrokes.push(stroke);
+  if (command) {
+    undoneCommands.push(command);
     render();
   }
 }
 
 function redo() {
-  const stroke = undoneStrokes.pop();
+  const command = undoneCommands.pop();
 
-  if (stroke) {
-    strokes.push(stroke);
+  if (command) {
+    commands.push(command);
     render();
   }
 }
@@ -66,13 +83,30 @@ function redo() {
 canvas.addEventListener("pointerdown", (event) => {
   if (activePointerId !== null) return;
 
+  if (selectedTool.type === "sticker") {
+    const point = pointerToCanvas(event);
+
+    commands.push({
+      type: "sticker",
+      x: point.x,
+      y: point.y,
+      emoji: selectedTool.emoji!,
+      size: selectedTool.size!,
+    });
+
+    undoneCommands.length = 0;
+    render();
+    return;
+  }
+
   activePointerId = event.pointerId;
   canvas.setPointerCapture(event.pointerId);
 
   currentStroke = {
+    type: "stroke",
     points: [pointerToCanvas(event)],
     color: "black",
-    width: 2,
+    width: selectedTool.width!,
   };
 });
 
@@ -87,8 +121,8 @@ canvas.addEventListener("pointerup", (event) => {
   if (event.pointerId !== activePointerId || !currentStroke) return;
 
   currentStroke.points.push(pointerToCanvas(event));
-  strokes.push(currentStroke);
-  undoneStrokes.length = 0;
+  commands.push(currentStroke);
+  undoneCommands.length = 0;
 
   currentStroke = null;
   activePointerId = null;
