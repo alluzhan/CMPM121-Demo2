@@ -1,45 +1,109 @@
-const app = document.querySelector<HTMLElement>("#app")!;
+import { drawStroke, type Point, type Stroke } from "./drawing.ts";
 
-const heading = document.createElement("h1");
-heading.textContent = "Sketchpad";
-
-const canvas = document.createElement("canvas");
-canvas.width = 500;
-canvas.height = 500;
-canvas.style.outline = "5px solid #333";
-canvas.style.touchAction = "none";
-
+// Get HTML elements
+const canvas = document.querySelector<HTMLCanvasElement>("#canvas")!;
+const redrawButton = document.querySelector<HTMLButtonElement>("#redraw")!;
+const undoButton = document.querySelector<HTMLButtonElement>("#undo")!;
+const redoButton = document.querySelector<HTMLButtonElement>("#redo")!;
 const pen = canvas.getContext("2d")!;
 
-// Function to convert pointer event coordinates to canvas coordinates
-function pointerToCanvas(event: PointerEvent) {
-  const canvasBounds = canvas.getBoundingClientRect();
+// Drawing data
+const strokes: Stroke[] = [];
+const undoneStrokes: Stroke[] = [];
+
+let currentStroke: Stroke | null = null;
+let activePointerId: number | null = null;
+
+// convert pointer coordinates to canvas coordinates
+function pointerToCanvas(event: PointerEvent): Point {
+  const bounds = canvas.getBoundingClientRect();
+
   return {
-    x: event.clientX - canvasBounds.left,
-    y: event.clientY - canvasBounds.top,
+    x: (event.clientX - bounds.left) * canvas.width / bounds.width,
+    y: (event.clientY - bounds.top) * canvas.height / bounds.height,
   };
 }
 
-let previousPoint: { x: number; y: number } | null = null;
+// unable button
+function updateButtons() {
+  undoButton.disabled = strokes.length === 0;
+  redoButton.disabled = undoneStrokes.length === 0;
+}
 
-/*If the pointer is down, start drawing. If the pointer moves, draw a line from the previous point
-to the current point. When the pointer is lifted or canceled, drawing is stopped. */
+function render() {
+  pen.clearRect(0, 0, canvas.width, canvas.height);
+
+  for (const stroke of strokes) {
+    drawStroke(pen, stroke);
+  }
+
+  if (currentStroke !== null) {
+    drawStroke(pen, currentStroke);
+  }
+
+  updateButtons();
+}
+
+function undo() {
+  const stroke = strokes.pop();
+
+  if (stroke) {
+    undoneStrokes.push(stroke);
+    render();
+  }
+}
+
+function redo() {
+  const stroke = undoneStrokes.pop();
+
+  if (stroke) {
+    strokes.push(stroke);
+    render();
+  }
+}
+
+// start a stroke
 canvas.addEventListener("pointerdown", (event) => {
+  if (activePointerId !== null) return;
+
+  activePointerId = event.pointerId;
   canvas.setPointerCapture(event.pointerId);
-  previousPoint = pointerToCanvas(event);
+
+  currentStroke = {
+    points: [pointerToCanvas(event)],
+    color: "black",
+    width: 2,
+  };
 });
 
 canvas.addEventListener("pointermove", (event) => {
-  if (!previousPoint) return;
-  const currentPoint = pointerToCanvas(event);
-  pen.beginPath();
-  pen.moveTo(previousPoint.x, previousPoint.y);
-  pen.lineTo(currentPoint.x, currentPoint.y);
-  pen.stroke();
-  previousPoint = currentPoint;
+  if (event.pointerId !== activePointerId || !currentStroke) return;
+
+  currentStroke.points.push(pointerToCanvas(event));
+  render();
 });
 
-canvas.addEventListener("pointerup", () => (previousPoint = null));
-canvas.addEventListener("pointercancel", () => (previousPoint = null));
+canvas.addEventListener("pointerup", (event) => {
+  if (event.pointerId !== activePointerId || !currentStroke) return;
 
-app.append(heading, canvas);
+  currentStroke.points.push(pointerToCanvas(event));
+  strokes.push(currentStroke);
+  undoneStrokes.length = 0;
+
+  currentStroke = null;
+  activePointerId = null;
+  render();
+});
+
+canvas.addEventListener("pointercancel", (event) => {
+  if (event.pointerId !== activePointerId) return;
+
+  currentStroke = null;
+  activePointerId = null;
+  render();
+});
+
+redrawButton.addEventListener("click", render);
+undoButton.addEventListener("click", undo);
+redoButton.addEventListener("click", redo);
+render();

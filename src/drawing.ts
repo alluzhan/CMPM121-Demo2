@@ -1,0 +1,31 @@
+// drawing data type
+export type Point = {
+  x: number;
+  y: number;
+};
+
+export type Stroke = {
+  points: Point[];
+  color: string;
+  width: number;
+};
+
+// draw one stroke
+export function drawStroke(
+  ctx: CanvasRenderingContext2D,
+  stroke: Stroke,
+) {
+  if (stroke.points.length === 0) return;
+
+  ctx.beginPath();
+  ctx.strokeStyle = stroke.color;
+  ctx.lineWidth = stroke.width;
+
+  ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+
+  for (let i = 1; i < stroke.points.length; i++) {
+    ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+  }
+
+  ctx.stroke();
+}
