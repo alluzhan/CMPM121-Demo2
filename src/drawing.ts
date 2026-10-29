@@ -27,13 +27,16 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
   ctx.beginPath();
   ctx.strokeStyle = stroke.color;
   ctx.lineWidth = stroke.width;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
 
   ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
-
   for (let i = 1; i < stroke.points.length; i++) {
     ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
   }
-
+  if (stroke.points.length === 1) {
+    ctx.lineTo(stroke.points[0].x + 0.01, stroke.points[0].y);
+  }
   ctx.stroke();
 }
 

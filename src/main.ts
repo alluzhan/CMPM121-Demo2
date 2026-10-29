@@ -5,16 +5,15 @@ import {
   type Stroke,
 } from "./drawing.ts";
 
-import { tools } from "./tools.ts";
+import { type Tool, tools } from "./tools.ts";
 
-// Get HTML elements
 const canvas = document.querySelector<HTMLCanvasElement>("#canvas")!;
+const palette = document.querySelector<HTMLDivElement>("#palette")!;
 const redrawButton = document.querySelector<HTMLButtonElement>("#redraw")!;
 const undoButton = document.querySelector<HTMLButtonElement>("#undo")!;
 const redoButton = document.querySelector<HTMLButtonElement>("#redo")!;
 const pen = canvas.getContext("2d")!;
 
-// Drawing data
 const commands: DrawingCommand[] = [];
 const undoneCommands: DrawingCommand[] = [];
 
@@ -31,17 +30,22 @@ function pointerToCanvas(event: PointerEvent): Point {
   };
 }
 
-// choose tool
-let selectedTool = tools.thin;
-document.querySelectorAll<HTMLButtonElement>(".tool").forEach((button) => {
-  button.addEventListener("click", () => {
-    const toolId = button.dataset.tool!;
+//choose tools
+let selectedTool: Tool = tools[0];
 
-    selectedTool = tools[toolId];
-  });
-});
+function renderPalette() {
+  palette.replaceChildren(...tools.map((tool) => {
+    const button = document.createElement("button");
+    button.textContent = tool.name;
+    button.style.outline = tool === selectedTool ? "2px solid pink" : "";
+    button.addEventListener("click", () => {
+      selectedTool = tool;
+      renderPalette();
+    });
+    return button;
+  }));
+}
 
-// unable button
 function updateButtons() {
   undoButton.disabled = commands.length === 0;
   redoButton.disabled = undoneCommands.length === 0;
@@ -79,7 +83,6 @@ function redo() {
   }
 }
 
-// start a stroke
 canvas.addEventListener("pointerdown", (event) => {
   if (activePointerId !== null) return;
 
@@ -90,8 +93,8 @@ canvas.addEventListener("pointerdown", (event) => {
       type: "sticker",
       x: point.x,
       y: point.y,
-      emoji: selectedTool.emoji!,
-      size: selectedTool.size!,
+      emoji: selectedTool.emoji,
+      size: selectedTool.size,
     });
 
     undoneCommands.length = 0;
@@ -106,7 +109,7 @@ canvas.addEventListener("pointerdown", (event) => {
     type: "stroke",
     points: [pointerToCanvas(event)],
     color: "black",
-    width: selectedTool.width!,
+    width: selectedTool.width,
   };
 });
 
@@ -140,4 +143,6 @@ canvas.addEventListener("pointercancel", (event) => {
 redrawButton.addEventListener("click", render);
 undoButton.addEventListener("click", undo);
 redoButton.addEventListener("click", redo);
+
+renderPalette();
 render();
