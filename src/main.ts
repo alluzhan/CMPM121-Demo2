@@ -1,13 +1,8 @@
-import {
-  drawCommand,
-  type DrawingCommand,
-  type Point,
-  type Stroke,
-} from "./drawing.ts";
-
+import { drawCommand, type Point, type Stroke } from "./drawing.ts";
 import { addTool, type Tool, tools } from "./tools.ts";
 import { renderScene } from "./render.ts";
 import { exportPng } from "./export.ts";
+import { addCommand, commands, redo, undo, undoneCommands } from "./history.ts";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#canvas")!;
 const palette = document.querySelector<HTMLDivElement>("#palette")!;
@@ -22,9 +17,6 @@ document.querySelector<HTMLButtonElement>("#export")!.addEventListener(
 );
 
 const pen = canvas.getContext("2d")!;
-
-const commands: DrawingCommand[] = [];
-const undoneCommands: DrawingCommand[] = [];
 
 let currentStroke: Stroke | null = null;
 let activePointerId: number | null = null;
@@ -66,31 +58,13 @@ function render() {
   updateButtons();
 }
 
-function undo() {
-  const command = commands.pop();
-
-  if (command) {
-    undoneCommands.push(command);
-    render();
-  }
-}
-
-function redo() {
-  const command = undoneCommands.pop();
-
-  if (command) {
-    commands.push(command);
-    render();
-  }
-}
-
 canvas.addEventListener("pointerdown", (event) => {
   if (activePointerId !== null) return;
 
   if (selectedTool.type === "sticker") {
     const point = pointerToCanvas(event);
 
-    commands.push({
+    addCommand({
       type: "sticker",
       x: point.x,
       y: point.y,
@@ -98,7 +72,6 @@ canvas.addEventListener("pointerdown", (event) => {
       size: selectedTool.size,
     });
 
-    undoneCommands.length = 0;
     render();
     return;
   }
@@ -125,8 +98,7 @@ canvas.addEventListener("pointerup", (event) => {
   if (event.pointerId !== activePointerId || !currentStroke) return;
 
   currentStroke.points.push(pointerToCanvas(event));
-  commands.push(currentStroke);
-  undoneCommands.length = 0;
+  addCommand(currentStroke);
 
   currentStroke = null;
   activePointerId = null;
@@ -142,8 +114,16 @@ canvas.addEventListener("pointercancel", (event) => {
 });
 
 redrawButton.addEventListener("click", render);
-undoButton.addEventListener("click", undo);
-redoButton.addEventListener("click", redo);
+
+undoButton.addEventListener("click", () => {
+  undo();
+  render();
+});
+
+redoButton.addEventListener("click", () => {
+  redo();
+  render();
+});
 
 //add new tool button
 const newToolButton = document.querySelector<HTMLButtonElement>("#newTool")!;
