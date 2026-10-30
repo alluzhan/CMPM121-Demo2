@@ -5,13 +5,21 @@ import {
   type Stroke,
 } from "./drawing.ts";
 
-import { type Tool, tools } from "./tools.ts";
+import { addTool, type Tool, tools } from "./tools.ts";
+import { renderScene } from "./render.ts";
+import { exportPng } from "./export.ts";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#canvas")!;
 const palette = document.querySelector<HTMLDivElement>("#palette")!;
 const redrawButton = document.querySelector<HTMLButtonElement>("#redraw")!;
 const undoButton = document.querySelector<HTMLButtonElement>("#undo")!;
 const redoButton = document.querySelector<HTMLButtonElement>("#redo")!;
+
+document.querySelector<HTMLButtonElement>("#export")!.addEventListener(
+  "click",
+  () => exportPng(commands, canvas.width, canvas.height),
+);
+
 const pen = canvas.getContext("2d")!;
 
 const commands: DrawingCommand[] = [];
@@ -52,16 +60,8 @@ function updateButtons() {
 }
 
 function render() {
-  pen.clearRect(0, 0, canvas.width, canvas.height);
-
-  for (const command of commands) {
-    drawCommand(pen, command);
-  }
-
-  if (currentStroke !== null) {
-    drawCommand(pen, currentStroke);
-  }
-
+  renderScene(pen, commands);
+  if (currentStroke !== null) drawCommand(pen, currentStroke);
   updateButtons();
 }
 
@@ -143,6 +143,46 @@ canvas.addEventListener("pointercancel", (event) => {
 redrawButton.addEventListener("click", render);
 undoButton.addEventListener("click", undo);
 redoButton.addEventListener("click", redo);
+
+//add new tool button
+const newToolButton = document.querySelector<HTMLButtonElement>("#newTool")!;
+const MAX_STICKER_LENGTH = 15;
+const MAX_CUSTOM_STICKERS = 3;
+let customStickerCount = 0;
+
+newToolButton.addEventListener("click", () => {
+  if (customStickerCount >= MAX_CUSTOM_STICKERS) {
+    alert(`You can only make ${MAX_CUSTOM_STICKERS} custom stickers.`);
+    return;
+  }
+
+  const newSticker = prompt(
+    `Enter an emoji or short text (max ${MAX_STICKER_LENGTH} characters):`,
+  )?.trim();
+  if (!newSticker) return;
+
+  if ([...newSticker].length > MAX_STICKER_LENGTH) {
+    alert(`Too long. Please use ${MAX_STICKER_LENGTH} characters or fewer.`);
+    return;
+  }
+
+  const name = prompt("Sticker Name (optional):")?.trim() || newSticker;
+  const tool: Tool = {
+    id: `custom-${customStickerCount}`,
+    name,
+    type: "sticker",
+    emoji: newSticker,
+    size: 40,
+  };
+  addTool(tool);
+  customStickerCount++;
+  selectedTool = tool;
+  renderPalette();
+
+  if (customStickerCount >= MAX_CUSTOM_STICKERS) {
+    newToolButton.disabled = true;
+  }
+});
 
 renderPalette();
 render();

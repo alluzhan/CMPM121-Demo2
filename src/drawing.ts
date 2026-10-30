@@ -42,6 +42,7 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
 
 // draw sticker
 function drawSticker(ctx: CanvasRenderingContext2D, sticker: Sticker) {
+  ctx.fillStyle = "black";
   ctx.font = `${sticker.size}px sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
