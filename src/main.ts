@@ -14,6 +14,7 @@ const palette = document.querySelector<HTMLDivElement>("#palette")!;
 const redrawButton = document.querySelector<HTMLButtonElement>("#redraw")!;
 const undoButton = document.querySelector<HTMLButtonElement>("#undo")!;
 const redoButton = document.querySelector<HTMLButtonElement>("#redo")!;
+const clearButton = document.querySelector<HTMLButtonElement>("#clear")!;
 
 document.querySelector<HTMLButtonElement>("#export")!.addEventListener(
   "click",
@@ -182,6 +183,14 @@ newToolButton.addEventListener("click", () => {
   if (customStickerCount >= MAX_CUSTOM_STICKERS) {
     newToolButton.disabled = true;
   }
+});
+
+// clear button
+clearButton.addEventListener("click", () => {
+  commands.length = 0;
+  undoneCommands.length = 0;
+  currentStroke = null;
+  render();
 });
 
 renderPalette();
