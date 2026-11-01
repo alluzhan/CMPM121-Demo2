@@ -3,28 +3,124 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>D2 Sketchpad</title>
+    <title>Garden Sketchpad</title>
+    <style>
+    :root {
+      --sky: #d9edde;
+      --grass-dark: #4f8a3c;
+      --petal: #f7a8c4;
+      --petal-dark: #d9628f;
+      --soil: #8a5a3c;
+      --cream: #fff9ec;
+      --ink: #3b2f2a;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: ui-rounded, "Trebuchet MS", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--sky);
+    }
+
+    main {
+      max-width: 620px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0 0 4px;
+      font-size: 2.2rem;
+      color: var(--grass-dark);
+      text-shadow: 2px 2px 0 #fff;
+    }
+
+    .card {
+      background: var(--cream);
+      border: 4px solid var(--soil);
+      border-radius: 20px;
+      padding: 16px;
+      box-shadow: 0 6px 0 var(--grass-dark);
+    }
+
+    #palette,
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    #palette {
+      margin-bottom: 14px;
+    }
+
+    .actions {
+      margin-top: 14px;
+    }
+
+    button {
+      font: inherit;
+      padding: 8px 16px;
+      color: var(--ink);
+      background: #fff;
+      border: 2px solid var(--grass-dark);
+      border-radius: 999px;
+      cursor: pointer;
+      transition: transform 0.1s, background 0.1s;
+    }
+
+    .actions button {
+      border-color: var(--petal-dark);
+    }
+    .actions button:hover:not(:disabled) {
+      background: #ffe3ee;
+    }
+
+    canvas {
+      display: block;
+      margin: 0 auto;
+      max-width: 100%;
+      height: auto;
+      background: #fff;
+      outline: 5px solid var(--petal);
+      border-radius: 4px;
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    .flowers {
+      margin-top: 24px;
+      font-size: 1.6rem;
+      letter-spacing: 4px;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    </style>
   </head>
   <body>
     <main>
-      <h1>Sketchpad</h1>
+      <h1>🌸 Garden Sketchpad 🌿</h1>
 
-      <div id="palette"></div>
+      <div class="card">
+        <div id="palette"></div>
 
-      <canvas
-        id="canvas"
-        width="500"
-        height="500"
-        style="outline: 5px solid #333; touch-action: none; margin-top: 10px"
-      ></canvas>
+        <canvas id="canvas" width="500" height="500"></canvas>
 
-      <div>
-        <button id="undo">Undo</button>
-        <button id="redo">Redo</button>
-        <button id="redraw">Redraw</button>
-        <button id="clear">Clear</button>
-        <button id="newTool">+ New sticker</button>
-        <button id="export">Export PNG</button>
+        <div class="actions">
+          <button id="undo">Undo</button>
+          <button id="redo">Redo</button>
+          <button id="clear">Clear</button>
+          <button id="redraw">Redraw</button>
+          <button id="newTool"> Add New sticker</button>
+          <button id="export">Export PNG</button>
+        </div>
+      </div>
+
+      <div class="flowers" aria-hidden="true">
+        🌱🌷🌿🌼🌱🌻🌿🌸🌱🌷🌿🌼🌱🌻🌿🌸
       </div>
     </main>
 

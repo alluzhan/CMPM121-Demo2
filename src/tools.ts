@@ -10,7 +10,7 @@ export const tools: Tool[] = [
   { id: "thick", name: "Thick Marker", type: "stroke", width: 10 },
   { id: "flower", name: "🌸", type: "sticker", emoji: "🌸", size: 40 },
   { id: "grass", name: "🌿", type: "sticker", emoji: "🌿", size: 40 },
-  { id: "sweat", name: "😅", type: "sticker", emoji: "😅", size: 40 },
+  { id: "lotus", name: "🪷", type: "sticker", emoji: "🪷", size: 40 },
 ];
 
 export function addTool(tool: Tool) {

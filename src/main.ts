@@ -2,7 +2,15 @@ import { drawCommand, type Point, type Stroke } from "./drawing.ts";
 import { addTool, type Tool, tools } from "./tools.ts";
 import { renderScene } from "./render.ts";
 import { exportPng } from "./export.ts";
-import { addCommand, commands, redo, undo, undoneCommands } from "./history.ts";
+import {
+  activeCommands,
+  addCommand,
+  canRedo,
+  canUndo,
+  clearHistory,
+  redo,
+  undo,
+} from "./history.ts";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#canvas")!;
 const palette = document.querySelector<HTMLDivElement>("#palette")!;
@@ -10,16 +18,14 @@ const redrawButton = document.querySelector<HTMLButtonElement>("#redraw")!;
 const undoButton = document.querySelector<HTMLButtonElement>("#undo")!;
 const redoButton = document.querySelector<HTMLButtonElement>("#redo")!;
 const clearButton = document.querySelector<HTMLButtonElement>("#clear")!;
-
-document.querySelector<HTMLButtonElement>("#export")!.addEventListener(
-  "click",
-  () => exportPng(commands, canvas.width, canvas.height),
-);
+const exportButton = document.querySelector<HTMLButtonElement>("#export")!;
+const newToolButton = document.querySelector<HTMLButtonElement>("#newTool")!;
 
 const pen = canvas.getContext("2d")!;
 
 let currentStroke: Stroke | null = null;
 let activePointerId: number | null = null;
+let selectedTool: Tool = tools[0];
 
 // convert pointer coordinates to canvas coordinates
 function pointerToCanvas(event: PointerEvent): Point {
@@ -31,14 +37,13 @@ function pointerToCanvas(event: PointerEvent): Point {
   };
 }
 
-//choose tools
-let selectedTool: Tool = tools[0];
-
+// palette is generated from the tools array
 function renderPalette() {
   palette.replaceChildren(...tools.map((tool) => {
     const button = document.createElement("button");
     button.textContent = tool.name;
-    button.style.outline = tool === selectedTool ? "2px solid pink" : "";
+    button.style.outline = tool === selectedTool ? "3px solid #fbb1cd" : "";
+    button.style.outlineOffset = "1px";
     button.addEventListener("click", () => {
       selectedTool = tool;
       renderPalette();
@@ -48,14 +53,21 @@ function renderPalette() {
 }
 
 function updateButtons() {
-  undoButton.disabled = commands.length === 0;
-  redoButton.disabled = undoneCommands.length === 0;
+  undoButton.disabled = !canUndo();
+  redoButton.disabled = !canRedo();
 }
 
 function render() {
-  renderScene(pen, commands);
+  renderScene(pen, activeCommands());
   if (currentStroke !== null) drawCommand(pen, currentStroke);
   updateButtons();
+}
+
+// discard the in-progress gesture without committing anything
+function cancelGesture() {
+  currentStroke = null;
+  activePointerId = null;
+  render();
 }
 
 canvas.addEventListener("pointerdown", (event) => {
@@ -107,13 +119,19 @@ canvas.addEventListener("pointerup", (event) => {
 
 canvas.addEventListener("pointercancel", (event) => {
   if (event.pointerId !== activePointerId) return;
-
-  currentStroke = null;
-  activePointerId = null;
-  render();
+  cancelGesture();
 });
 
-redrawButton.addEventListener("click", render);
+//Cancel gesture on Escape key --> it not saved in the history
+globalThis.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && currentStroke) cancelGesture();
+});
+
+// Redraw: wipe only the pixels, then rebuild from the document
+redrawButton.addEventListener("click", () => {
+  pen.clearRect(0, 0, canvas.width, canvas.height);
+  render();
+});
 
 undoButton.addEventListener("click", () => {
   undo();
@@ -125,8 +143,21 @@ redoButton.addEventListener("click", () => {
   render();
 });
 
-//add new tool button
-const newToolButton = document.querySelector<HTMLButtonElement>("#newTool")!;
+// Clear: deletes the document and the history
+clearButton.addEventListener("click", () => {
+  if (!confirm("Clear the whole drawing? This can't be undone.")) return;
+  clearHistory();
+  currentStroke = null;
+  activePointerId = null;
+  render();
+});
+
+exportButton.addEventListener(
+  "click",
+  () => exportPng(activeCommands(), canvas.width, canvas.height),
+);
+
+// add new tool button
 const MAX_STICKER_LENGTH = 15;
 const MAX_CUSTOM_STICKERS = 3;
 let customStickerCount = 0;
@@ -163,14 +194,6 @@ newToolButton.addEventListener("click", () => {
   if (customStickerCount >= MAX_CUSTOM_STICKERS) {
     newToolButton.disabled = true;
   }
-});
-
-// clear button
-clearButton.addEventListener("click", () => {
-  commands.length = 0;
-  undoneCommands.length = 0;
-  currentStroke = null;
-  render();
 });
 
 renderPalette();
