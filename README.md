@@ -8,7 +8,7 @@ Deployed Page:
 ### Tools
 
 - Thin and thick markers
-- Three preset stickers: 🌸 🌿 😅
+- Three preset stickers: 🌸 🌿 🪷
 - Create custom sticker (up to three)
 - Undo/redo button
 - Redraw/clear button
